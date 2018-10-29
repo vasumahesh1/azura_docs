@@ -61,10 +61,20 @@ Certain descriptors could be:
 - Pool Level = A texture for the entire pool of drawables
 - Drawable Level (Only for Render Passes) = Eg: Model Matrix UniformBuffer
 
-We need a way to avoid duplicating the data if it is shared at a particular level.
+We need a way to avoid duplicating the data if it is shared at a particular level. This should be on a granularity of Descriptor Sets and not individual entries. 1 set has 1 place of update either at the renderer level, pass level (compute or render), pool level etc.
 
-Core things:
-- Uniform Descriptor Heap for D3D12. Create a large pool outside. Not sure about Vulkan
+Pros:
+- Already have a set for all types of descriptors added. Can maintain `UsageScope` there itself
+
+Cons
+- Issue comes with Renderer, Pass & Pools having similar ways of updating data & maintain 1 buffer for each level. But a drawable is actually sharing the buffer memory with the pool itself. So the pool has to maintain drawable buffer updates as well.
+
+Notes / Foreseeable Changes:
+- Uniform Descriptor Heap for D3D12. Create a large pool outside. Not sure about Vulkan.
+- Need a governing structure which can be re-used among the different scopes and writes to relevant GPU bound buffers as needed.
+- Render Passes might need a staging buffer as well for their scope specific updates.
+- This certainly, for Vulkan, points to scope level descriptor sets & we write to those sets during Submit phase. And then, per drawable we generate a set of descriptors by "gathering" them from the renderer, render pass, pool. ComputePool might need a similar thing but no drawable scope level to worry about.
+
 
 
 
